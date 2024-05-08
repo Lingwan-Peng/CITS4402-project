@@ -146,7 +146,7 @@ classdef project_exported < matlab.apps.AppBase
                 
                 if subfolders(i).isdir
                     % Extract conventional features from each subfolder
-                    ConvFeatures = ExtractConventioalFeatures(app, fullfile(directory, subfolders(i).name));
+                    ConvFeatures = ExtractConventioalFeatures(app, fullfile(directory));
                     
                     % Append the extracted features to the featureData array
                     featureData = [featureData; [{subfolders(i).name}, num2cell(ConvFeatures)]];
