@@ -7,7 +7,14 @@
 % @return masks         Three masks from the slice, indicating the tumor
 %                       messages, uncombined.
 function [slice, masks] = ReadSliceByID(volume_path, volume_ID, slice_ID)
-    subdir_name = strcat("volume_", num2str(volume_ID));
+    if isnumeric(volume_ID)
+        subdir_name = strcat("volume_", num2str(volume_ID));
+    elseif ischar(volume_ID)
+        subdir_name = volume_ID;
+    else
+        subdir_name = '';
+        disp('Wrong input of parameter volume_ID');
+    end
     fn = strcat(subdir_name, "_slice_", num2str(slice_ID), ".h5");
     
     fullFileName = fullfile(volume_path, subdir_name, fn);
