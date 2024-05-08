@@ -68,7 +68,7 @@ classdef project_exported < matlab.apps.AppBase
             convFeatures = [1, Dmax, Envol];
         end
         
-        function radFeatures = ExtractRadiomicFeatures(app, path)
+        function radFeatures = ExtractRadiomicFeatures(app, path, volume_ID)
             radFeatures = 1:30;
         end
     end
@@ -178,16 +178,18 @@ classdef project_exported < matlab.apps.AppBase
                 'texture_Feature_1', 'texture_Feature_2', 'texture_Feature_3', 'texture_Feature_4', 'texture_Feature_5', 'texture_Feature_6', 'texture_Feature_7', 'texture_Feature_8', 'texture_Feature_9', 'texture_Feature_10'}; featureData];
             
             % Loop through each subfolder
-            for i = 3:numel(subfolders) % starting from 3 to skip '.' and '..' directories 
+            for i = 1:numel(subfolders) % starting from 3 to skip '.' and '..' directories 
                 
                 if subfolders(i).isdir
                     % Extract conventional features from each subfolder
-                    RadFeatures = ExtractRadiomicFeatures(app, fullfile(directory, subfolders(i).name));
+                    % Check if the subfloder name starts by 'volume_' if not, will skip
+                    if startsWith(subfolders(i).name, 'volume_')
+                        RadFeatures = ExtractRadiomicFeatures(app, fullfile(directory), subfolders(i).name);
                     
-                    % Append the extracted features to the featureData array
-                    featureRow = [{subfolders(i).name}, num2cell(RadFeatures)]; % Convert RadFeatures to cell array
-
-                    featureData = [featureData; featureRow];
+                        % Append the extracted features to the featureData array
+                        featureData = [featureData; [{subfolders(i).name}, num2cell(RadFeatures)]]; % Convert RadFeatures to cell array
+                        disp(strcat(subfolders(i).name, ' extracted'));
+                    end
                 end
             end
             
