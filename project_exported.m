@@ -63,7 +63,9 @@ classdef project_exported < matlab.apps.AppBase
         %% place holder for testing csv output
         function convFeatures = ExtractConventioalFeatures(app, path, volume_ID)
             Dmax = FindMaxDiameter(path, volume_ID, 155);
-            convFeatures = [1, Dmax, 2];
+            Envol = FindOuterLayerEnvolvement(path, volumn_ID, 155);
+            
+            convFeatures = [1, Dmax, Envol];
         end
         
         function radFeatures = ExtractRadiomicFeatures(app, path)
