@@ -14,6 +14,7 @@ function Envol = FindOuterLayerEnvolvement(volume_path, volume_ID, slice_num)
         % Calculate the percentage of the overlapping region compared to the total outer layer area
         Envol = (totalEnvol / totalBound) * 100;
         
+        disp(['tEnvol:', num2str(totalEnvol), ', tBound:', num2str(totalBound)]);
         disp(['Percentage of outer layer overlapped by tumor: ', num2str(Envol), '%']);
 end
 
@@ -26,22 +27,15 @@ function [boundaryBrain, overlapMask] = FindEnvolvementSingleSlice(volume_path, 
     im = im > threshold; % Create a binary mask using thresholding
     
     % smooth and close disconnected sections
-    se = strel('disk', 10); % kernel to close brain im
+    se = strel('disk', 20); % kernel to close brain im
     % close the brain to connect all parts/islands
     closedBrain = imerode(imdilate(im, se), se);
     
-    thickness = strel('disk', 5); % kernel to find boundary
+    thickness = strel('disk', 9); % kernel to find boundary
     boundaryBrain = closedBrain - imerode(closedBrain, thickness);
 
-    % process masks
-    % sizes = size(tumorMasks);
-    % if sizes(1) == 0
-    %     disp("No mask specified");
-    %     overlapMask = 0;
-    % else
-        masks = squeeze(logical(sum(tumorMasks, 1)));
-                
-        % Calculate the intersection between the dilated tumor mask and the original tumor mask
-        overlapMask = boundaryBrain & masks;
-    % end
+    masks = squeeze(logical(sum(tumorMasks, 1)));
+            
+    % Calculate the intersection between the dilated tumor mask and the original tumor mask
+    overlapMask = boundaryBrain & masks;
 end
