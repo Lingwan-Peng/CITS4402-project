@@ -1,5 +1,5 @@
 function radiomic_features_avg = ExtractRadiomic(data_directory, volume_ID)
-% 
+
 % data_directory = 'data';
 % volume_ID = 1;
 
@@ -29,15 +29,40 @@ medobjprop_mri.PatientCoordinateSystem = "LPS+";
 medobj_mask = medicalVolume(tumor_masks, medobjprop_masks);
 
 shapefeatures = table();
+intensityfeatures = table();
+texturefeature = table();
 
 for i=1:4
     medobj_mri = medicalVolume(squeeze(mri_slices(i, :, :, :)), medobjprop_mri);
     
     R = radiomics(medobj_mri, medobj_mask);
     shapefeatures(i, :) = shapeFeatures(R);
+    intensityfeatures(i, :) = intensityFeatures(R);
+    texturefeature(i, :) = textureFeatures(R);
 end
 
-radiomic_features_avg = sum(shapefeatures(:, 2:end), 1);
+shapefeatures = Numericalize(shapefeatures);
+intensityfeatures = Numericalize(intensityfeatures);
+texturefeature = Numericalize(texturefeature);
+
+radomic_features = [shapefeatures intensityfeatures texturefeature];
+
+radiomic_features_avg = sum(radomic_features, 1);
 radiomic_features_avg = radiomic_features_avg ./ 4;
 
+end
+
+
+function num_table = Numericalize(src)
+    varname_list = src.Properties.VariableNames;
+    num_table = src;
+    for i=1:length(varname_list)
+        if ~isnumeric(src(1, i))
+            try
+                num_table = removevars(num_table, varname_list(1));
+            catch err
+                disp(strcat(err.message, 'Skipped'));
+            end
+        end
+    end
 end

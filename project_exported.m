@@ -172,15 +172,15 @@ classdef project_exported < matlab.apps.AppBase
             
             % Create an empty cell array to store the extracted features
             % Create an empty cell array to store the extracted features
-            featureData = cell(0, 24); % 24 columns
+            featureData = table();
             
-            % Add heading row
-            featureData = [{'volume ID', 'VolumeMesh3D', 'VolumeVoxelCount3D', 'SurfaceAreaMesh3D', ...
-                            'SurfaceVolumeRatio3D', 'Compactness1_3D', 'Compactness2_3D', 'SphericalDisproportion3D', ...
-                            'Sphericity3D', 'Asphericity3D', 'CentreOfMassShift3D', 'Maximum3dDiameter3D', ...
-                            'MajorAxisLength3D', 'MinorAxisLength3D', 'LeastAxisLength3D', 'Elongation3D', ...
-                            'Flatness3D', 'VolumeDensityAABB_3D', 'AreaDensityAABB_3D', 'VolumeDensityAEE_3D', ...
-                            'AreaDensityAEE_3D', 'VolumeDensityConvexHull3D', 'AreaDensityConvexHull3D', 'IntegratedIntensity3D'}; featureData];
+            % % Add heading row
+            % featureData = [{'volume ID', 'VolumeMesh3D', 'VolumeVoxelCount3D', 'SurfaceAreaMesh3D', ...
+            %                 'SurfaceVolumeRatio3D', 'Compactness1_3D', 'Compactness2_3D', 'SphericalDisproportion3D', ...
+            %                 'Sphericity3D', 'Asphericity3D', 'CentreOfMassShift3D', 'Maximum3dDiameter3D', ...
+            %                 'MajorAxisLength3D', 'MinorAxisLength3D', 'LeastAxisLength3D', 'Elongation3D', ...
+            %                 'Flatness3D', 'VolumeDensityAABB_3D', 'AreaDensityAABB_3D', 'VolumeDensityAEE_3D', ...
+            %                 'AreaDensityAEE_3D', 'VolumeDensityConvexHull3D', 'AreaDensityConvexHull3D', 'IntegratedIntensity3D'}; featureData];
             
             % Loop through each subfolder
             for i = 1:numel(subfolders) % starting from 3 to skip '.' and '..' directories 
@@ -196,7 +196,7 @@ classdef project_exported < matlab.apps.AppBase
                         matches = regexp(subfolders(i).name, '\d+', 'match');
 
                         % Append the extracted features to the featureData array
-                        featureData = [featureData; [{str2double(matches{end})}, table2cell(radiomicFeat)]];
+                        featureData(str2double(matches{end}), :) = radiomicFeat;
                         disp(strcat(subfolders(i).name, ' extracted'));
                     end
                 end
@@ -204,7 +204,7 @@ classdef project_exported < matlab.apps.AppBase
             
             % Write the extracted features to a CSV file named 'conventional_features.csv'
             filename = fullfile(directory, 'radiomic_features.csv');
-            writecell(featureData, filename);
+            writetable(featureData, filename);
         end
     end
 
