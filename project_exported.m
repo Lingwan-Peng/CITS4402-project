@@ -148,7 +148,7 @@ classdef project_exported < matlab.apps.AppBase
                 if subfolders(i).isdir
                     % Extract conventional features from each subfolder
                     % Check if the subfloder name starts by 'volume_' if not, will skip
-                    if startsWith(subfolders(i).name, 'volume_')
+                    if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
                         ConvFeatures = ExtractConventioalFeatures(app, fullfile(directory), subfolders(i).name);
                     
                         % Append the extracted features to the featureData array
