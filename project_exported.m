@@ -171,12 +171,16 @@ classdef project_exported < matlab.apps.AppBase
             subfolders = dir(directory);
             
             % Create an empty cell array to store the extracted features
-            featureData = cell(0, 31); % 31 columns
+            % Create an empty cell array to store the extracted features
+            featureData = cell(0, 24); % 24 columns
             
             % Add heading row
-            featureData = [{' ', 'intensity_feature_1', 'intensity_feature_2', 'intensity_feature_3', 'intensity_feature_4', 'intensity_feature_5', 'intensity_feature_6', 'intensity_feature_7', 'intensity_feature_8', 'intensity_feature_9', 'intensity_feature_10'... 
-                'shape_feature_1', 'shape_feature_2', 'shape_feature_3', 'shape_feature_4', 'shape_feature_5', 'shape_feature_6', 'shape_feature_7', 'shape_feature_8', 'shape_feature_9', 'shape_feature_10'...
-                'texture_Feature_1', 'texture_Feature_2', 'texture_Feature_3', 'texture_Feature_4', 'texture_Feature_5', 'texture_Feature_6', 'texture_Feature_7', 'texture_Feature_8', 'texture_Feature_9', 'texture_Feature_10'}; featureData];
+            featureData = [{'volume ID', 'VolumeMesh3D', 'VolumeVoxelCount3D', 'SurfaceAreaMesh3D', ...
+                            'SurfaceVolumeRatio3D', 'Compactness1_3D', 'Compactness2_3D', 'SphericalDisproportion3D', ...
+                            'Sphericity3D', 'Asphericity3D', 'CentreOfMassShift3D', 'Maximum3dDiameter3D', ...
+                            'MajorAxisLength3D', 'MinorAxisLength3D', 'LeastAxisLength3D', 'Elongation3D', ...
+                            'Flatness3D', 'VolumeDensityAABB_3D', 'AreaDensityAABB_3D', 'VolumeDensityAEE_3D', ...
+                            'AreaDensityAEE_3D', 'VolumeDensityConvexHull3D', 'AreaDensityConvexHull3D', 'IntegratedIntensity3D'}; featureData];
             
             % Loop through each subfolder
             for i = 1:numel(subfolders) % starting from 3 to skip '.' and '..' directories 
@@ -184,11 +188,15 @@ classdef project_exported < matlab.apps.AppBase
                 if subfolders(i).isdir
                     % Extract conventional features from each subfolder
                     % Check if the subfloder name starts by 'volume_' if not, will skip
-                    if startsWith(subfolders(i).name, 'volume_')
-                        RadFeatures = ExtractRadiomicFeatures(app, fullfile(directory), subfolders(i).name);
                     
+                    if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
+                        radiomicFeat = ExtractRadiomic(fullfile(directory), subfolders(i).name);
+                        
+                        % Get the real ID of the volume
+                        matches = regexp(subfolders(i).name, '\d+', 'match');
+
                         % Append the extracted features to the featureData array
-                        featureData = [featureData; [{subfolders(i).name}, num2cell(RadFeatures)]]; % Convert RadFeatures to cell array
+                        featureData = [featureData; [{str2double(matches{end})}, table2cell(radiomicFeat)]];
                         disp(strcat(subfolders(i).name, ' extracted'));
                     end
                 end
