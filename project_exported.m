@@ -71,7 +71,26 @@ classdef project_exported < matlab.apps.AppBase
         end
         
         function radFeatures = ExtractRadiomicFeatures(app, path, volume_ID)
-            radFeatures = 1:30;
+            subfolders = dir(directory);
+            radFeatures = table();
+            
+            % Loop through each subfolder
+            for i = 1:numel(subfolders)
+                if subfolders(i).isdir
+                    if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
+                        radiomicFeat = ExtractRadiomic(fullfile(directory), subfolders(i).name, false);
+                        
+                        % Add volume name as the first column
+                        volume_ID = subfolders(i).name;
+                        radiomicFeat = addvars(radiomicFeat, repmat({volume_ID}, height(radiomicFeat), 1), 'Before', 1, 'NewVariableNames', 'VolumeID');
+                        
+                        % Append the extracted features to the featureData table
+                        radFeatures = [radFeatures; radiomicFeat];
+                        
+                        disp(strcat(subfolders(i).name, ' extracted'));
+                    end
+                end
+            end
         end
     end
 
@@ -195,6 +214,16 @@ classdef project_exported < matlab.apps.AppBase
             % Allow user to select directory containing multiple subfolders
             directory = uigetdir();
             featureData = extractradFeat(app, directory, false);
+
+            % Create an empty cell array to store the extracted features
+            desiredFeatures = {
+                'MinimumDiscretisedIntensity3D', 'TenPercentVolumeFraction3D', 'MeanIntensity3D', 'MeanIntensity3D', 'NinetiethIntensityPercentile3D', 'NinetiethIntensityPercentile3D', 'IntensityHistogramMode3D', 'TenthIntensityPercentile3D', 'VolumeFractionDifference3D', 'MedianDiscretisedIntensity3D' ...
+                'VolumeDensityAEE_3D', 'AreaDensityConvexHull3D', 'Elongation3D', 'AreaDensityAABB_3D', 'Flatness3D', 'VolumeDensityConvexHull3D', 'Sphericity3D', 'MinorAxisLength3D', 'SphericalDisproportion3D', 'LeastAxisLength3D' ...
+                'NormalisedInverseDifferenceMomentMerged3D', 'NormalisedInverseDifferenceMomentAveraged3D', 'NormalisedInverseDifferenceMerged3D', 'NormalisedInverseDifferenceAveraged3D', 'DependenceCountPercentage3D', 'InverseDifferenceMerged3D', 'InverseDifferenceAveraged3D', 'InverseDifferenceMomentMerged3D', 'InverseDifferenceMomentAveraged3D', 'RunEntropyMerged3D'
+            };
+
+            featureData = ExtractRadiomicFeatures(app, directory);
+            filteredFeaturesTable = featureData(:, ['VolumeID', desiredFeatures]);
 
             % Write the extracted features to a CSV file named 'conventional_features.csv'
             filename = fullfile(directory, 'radiomic_features.csv');
