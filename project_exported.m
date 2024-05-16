@@ -8,6 +8,7 @@ classdef project_exported < matlab.apps.AppBase
         AnnotationSwitchLabel          matlab.ui.control.Label
         ExtractRadiomicFeaturesButton  matlab.ui.control.Button
         ExtractConventionalFeaturesButton  matlab.ui.control.Button
+        CheckRepeatibilityButton       matlab.ui.control.Button
         SliceIDSlider                  matlab.ui.control.Slider
         SliceIDSliderLabel             matlab.ui.control.Label
         ChannelDropDown                matlab.ui.control.DropDown
@@ -163,34 +164,19 @@ classdef project_exported < matlab.apps.AppBase
             writecell(featureData, filename);
  
         end
-
-        % Button pushed function: ExtractRadiomicFeaturesButton
-        function ExtractRadiomicFeaturesButtonPushed(app, event)
-            % Allow user to select directory containing multiple subfolders
-            directory = uigetdir();
+        
+        function featureData = extractradFeat(app, directory, transformed)
+            % Create an empty table array to store the extracted features
             subfolders = dir(directory);
-            
-            % Create an empty cell array to store the extracted features
-            % Create an empty cell array to store the extracted features
             featureData = table();
             
-            % % Add heading row
-            % featureData = [{'volume ID', 'VolumeMesh3D', 'VolumeVoxelCount3D', 'SurfaceAreaMesh3D', ...
-            %                 'SurfaceVolumeRatio3D', 'Compactness1_3D', 'Compactness2_3D', 'SphericalDisproportion3D', ...
-            %                 'Sphericity3D', 'Asphericity3D', 'CentreOfMassShift3D', 'Maximum3dDiameter3D', ...
-            %                 'MajorAxisLength3D', 'MinorAxisLength3D', 'LeastAxisLength3D', 'Elongation3D', ...
-            %                 'Flatness3D', 'VolumeDensityAABB_3D', 'AreaDensityAABB_3D', 'VolumeDensityAEE_3D', ...
-            %                 'AreaDensityAEE_3D', 'VolumeDensityConvexHull3D', 'AreaDensityConvexHull3D', 'IntegratedIntensity3D'}; featureData];
-            
             % Loop through each subfolder
-            for i = 1:numel(subfolders) % starting from 3 to skip '.' and '..' directories 
-                
+            for i = 1:numel(subfolders)
                 if subfolders(i).isdir
                     % Extract conventional features from each subfolder
                     % Check if the subfloder name starts by 'volume_' if not, will skip
-                    
                     if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
-                        radiomicFeat = ExtractRadiomic(fullfile(directory), subfolders(i).name);
+                        radiomicFeat = ExtractRadiomic(fullfile(directory), subfolders(i).name, transformed);
                         
                         % Get the real ID of the volume
                         matches = regexp(subfolders(i).name, '\d+', 'match');
@@ -201,12 +187,52 @@ classdef project_exported < matlab.apps.AppBase
                     end
                 end
             end
-            
+        end
+
+
+        % Button pushed function: ExtractRadiomicFeaturesButton
+        function ExtractRadiomicFeaturesButtonPushed(app, event)
+            % Allow user to select directory containing multiple subfolders
+            directory = uigetdir();
+            featureData = extractradFeat(app, directory, false);
+
             % Write the extracted features to a CSV file named 'conventional_features.csv'
             filename = fullfile(directory, 'radiomic_features.csv');
             writetable(featureData, filename);
         end
+
+
+        function CheckRepeatibilityButtonPushed(app, event)
+            directory = uigetdir();
+            featureData_original = readtable(fullfile(directory, 'radiomic_features.csv'));
+            featureData_affined = extractradFeat(app, directory, true);
+
+            sizes_feat_table = size(featureData_affined);
+            avg = sum(featureData_original + featureData_affined, 1) ./ sizes_feat_table(1) ./ 2;
+            rep = sum(abs(featureData_original - featureData_affined), 1) ./ abs(avg);
+
+            filename = fullfile(directory, 'radiomic_features_affined.csv');
+            writetable(featureData_affined, filename);
+            filename = fullfile(directory, 'radiomic_features_original.csv');
+            writetable(featureData_original, filename);
+
+            filename = fullfile(directory, 'radiomic_features_rep.csv');
+            writetable(rep, filename);
+
+
+            % featureData_original = readtable(fullfile(directory, 'radiomic_features.csv'));
+            % featureData_affined = readtable(fullfile(directory, 'radiomic_features_affined.csv'));
+            % sizes_feat_table = size(featureData_affined);
+            % avg = sum(featureData_original + featureData_affined, 1) ./ sizes_feat_table(1) ./ 2;
+            % rep = sum(abs(featureData_original - featureData_affined), 1) ./ abs(avg);
+            % filename = fullfile(directory, 'radiomic_features_rep.csv');
+            % writetable(rep, filename);
+            % 
+            % rep_p = rep';
+            % rep_p = sortrows(rep_p, [1])
+        end
     end
+
 
     % Component initialization
     methods (Access = private)
@@ -231,6 +257,12 @@ classdef project_exported < matlab.apps.AppBase
             app.LoadSliceDirectoryButton.ButtonPushedFcn = createCallbackFcn(app, @LoadSliceDirectoryButtonPushed, true);
             app.LoadSliceDirectoryButton.Position = [101 199 123 23];
             app.LoadSliceDirectoryButton.Text = 'Load Slice Directory';
+
+            % Create CheckRepeatibilityButton
+            app.CheckRepeatibilityButton = uibutton(app.UIFigure, 'push');
+            app.CheckRepeatibilityButton.ButtonPushedFcn = createCallbackFcn(app, @CheckRepeatibilityButtonPushed, true);
+            app.CheckRepeatibilityButton.Position = [255 31 157 23];
+            app.CheckRepeatibilityButton.Text = 'Check Repeatibility';
 
             % Create ChannelDropDownLabel
             app.ChannelDropDownLabel = uilabel(app.UIFigure);

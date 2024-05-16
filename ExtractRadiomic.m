@@ -1,4 +1,4 @@
-function radiomic_features_avg = ExtractRadiomic(data_directory, volume_ID)
+function radiomic_features_avg = ExtractRadiomic(data_directory, volume_ID, transformed)
 
 % data_directory = 'data';
 % volume_ID = 1;
@@ -19,7 +19,11 @@ for i = 1:155 % Update the loop range as needed
     mri_slices(4, i, :, :) = mri_slice(4, :, :);
 end
 
-tform_I = affinetform3d(eye(4));
+if transformed
+    tform_I = affinetform3d(generateAffineInfo([0 1 0.2], 5*2*pi/360, [0 0 0]));
+else
+    tform_I = affinetform3d(eye(4));
+end
 
 sizes = size(mri_slices);
 medobjprop_mri = medicalref3d(sizes(2:end), tform_I);
@@ -42,6 +46,7 @@ for i=1:4
     intensityfeatures(i, :) = intensityFeatures(R);
     texturefeature(i, :) = textureFeatures(R);
 end
+
 
 shapefeatures = Numericalize(shapefeatures);
 intensityfeatures = Numericalize(intensityfeatures);
