@@ -19,9 +19,11 @@ for i = 1:155 % Update the loop range as needed
     mri_slices(4, i, :, :) = mri_slice(4, :, :);
 end
 
+tform_I = affinetform3d(eye(4));
+
 sizes = size(mri_slices);
-medobjprop_mri = medicalref3d(sizes(2:end));
-medobjprop_masks = medicalref3d(sizes(2:end));
+medobjprop_mri = medicalref3d(sizes(2:end), tform_I);
+medobjprop_masks = medicalref3d(sizes(2:end), tform_I);
 
 medobjprop_masks.PatientCoordinateSystem = "LPS+";
 medobjprop_mri.PatientCoordinateSystem = "LPS+";
