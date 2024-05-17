@@ -8,6 +8,7 @@ classdef project_exported < matlab.apps.AppBase
         AnnotationSwitchLabel          matlab.ui.control.Label
         ExtractRadiomicFeaturesButton  matlab.ui.control.Button
         ExtractConventionalFeaturesButton  matlab.ui.control.Button
+        CheckRepeatibilityButton       matlab.ui.control.Button
         SliceIDSlider                  matlab.ui.control.Slider
         SliceIDSliderLabel             matlab.ui.control.Label
         ChannelDropDown                matlab.ui.control.DropDown
@@ -70,7 +71,26 @@ classdef project_exported < matlab.apps.AppBase
         end
         
         function radFeatures = ExtractRadiomicFeatures(app, path, volume_ID)
-            radFeatures = 1:30;
+            subfolders = dir(directory);
+            radFeatures = table();
+            
+            % Loop through each subfolder
+            for i = 1:numel(subfolders)
+                if subfolders(i).isdir
+                    if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
+                        radiomicFeat = ExtractRadiomic(fullfile(directory), subfolders(i).name, false);
+                        
+                        % Add volume name as the first column
+                        volume_ID = subfolders(i).name;
+                        radiomicFeat = addvars(radiomicFeat, repmat({volume_ID}, height(radiomicFeat), 1), 'Before', 1, 'NewVariableNames', 'VolumeID');
+                        
+                        % Append the extracted features to the featureData table
+                        radFeatures = [radFeatures; radiomicFeat];
+                        
+                        disp(strcat(subfolders(i).name, ' extracted'));
+                    end
+                end
+            end
         end
     end
 
@@ -148,7 +168,7 @@ classdef project_exported < matlab.apps.AppBase
                 if subfolders(i).isdir
                     % Extract conventional features from each subfolder
                     % Check if the subfloder name starts by 'volume_' if not, will skip
-                    if startsWith(subfolders(i).name, 'volume_')
+                    if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
                         ConvFeatures = ExtractConventioalFeatures(app, fullfile(directory), subfolders(i).name);
                     
                         % Append the extracted features to the featureData array
@@ -163,42 +183,85 @@ classdef project_exported < matlab.apps.AppBase
             writecell(featureData, filename);
  
         end
+        
+        function featureData = extractradFeat(app, directory, transformed)
+            % Create an empty table array to store the extracted features
+            subfolders = dir(directory);
+            featureData = table();
+            
+            % Loop through each subfolder
+            for i = 1:numel(subfolders)
+                if subfolders(i).isdir
+                    % Extract conventional features from each subfolder
+                    % Check if the subfloder name starts by 'volume_' if not, will skip
+                    if isfolder(fullfile(directory, subfolders(i).name)) && startsWith(subfolders(i).name, 'volume_')
+                        radiomicFeat = ExtractRadiomic(fullfile(directory), subfolders(i).name, transformed);
+                        
+                        % Get the real ID of the volume
+                        matches = regexp(subfolders(i).name, '\d+', 'match');
+
+                        % Append the extracted features to the featureData array
+                        featureData(str2double(matches{end}), :) = radiomicFeat;
+                        disp(strcat(subfolders(i).name, ' extracted'));
+                    end
+                end
+            end
+        end
+
 
         % Button pushed function: ExtractRadiomicFeaturesButton
         function ExtractRadiomicFeaturesButtonPushed(app, event)
             % Allow user to select directory containing multiple subfolders
             directory = uigetdir();
-            subfolders = dir(directory);
-            
+            featureData = extractradFeat(app, directory, false);
+
             % Create an empty cell array to store the extracted features
-            featureData = cell(0, 31); % 31 columns
-            
-            % Add heading row
-            featureData = [{' ', 'intensity_feature_1', 'intensity_feature_2', 'intensity_feature_3', 'intensity_feature_4', 'intensity_feature_5', 'intensity_feature_6', 'intensity_feature_7', 'intensity_feature_8', 'intensity_feature_9', 'intensity_feature_10'... 
-                'shape_feature_1', 'shape_feature_2', 'shape_feature_3', 'shape_feature_4', 'shape_feature_5', 'shape_feature_6', 'shape_feature_7', 'shape_feature_8', 'shape_feature_9', 'shape_feature_10'...
-                'texture_Feature_1', 'texture_Feature_2', 'texture_Feature_3', 'texture_Feature_4', 'texture_Feature_5', 'texture_Feature_6', 'texture_Feature_7', 'texture_Feature_8', 'texture_Feature_9', 'texture_Feature_10'}; featureData];
-            
-            % Loop through each subfolder
-            for i = 1:numel(subfolders) % starting from 3 to skip '.' and '..' directories 
-                
-                if subfolders(i).isdir
-                    % Extract conventional features from each subfolder
-                    % Check if the subfloder name starts by 'volume_' if not, will skip
-                    if startsWith(subfolders(i).name, 'volume_')
-                        RadFeatures = ExtractRadiomicFeatures(app, fullfile(directory), subfolders(i).name);
-                    
-                        % Append the extracted features to the featureData array
-                        featureData = [featureData; [{subfolders(i).name}, num2cell(RadFeatures)]]; % Convert RadFeatures to cell array
-                        disp(strcat(subfolders(i).name, ' extracted'));
-                    end
-                end
-            end
-            
+            desiredFeatures = {
+                'MinimumDiscretisedIntensity3D', 'TenPercentVolumeFraction3D', 'MeanIntensity3D', 'MeanIntensity3D', 'NinetiethIntensityPercentile3D', 'NinetiethIntensityPercentile3D', 'IntensityHistogramMode3D', 'TenthIntensityPercentile3D', 'VolumeFractionDifference3D', 'MedianDiscretisedIntensity3D' ...
+                'VolumeDensityAEE_3D', 'AreaDensityConvexHull3D', 'Elongation3D', 'AreaDensityAABB_3D', 'Flatness3D', 'VolumeDensityConvexHull3D', 'Sphericity3D', 'MinorAxisLength3D', 'SphericalDisproportion3D', 'LeastAxisLength3D' ...
+                'NormalisedInverseDifferenceMomentMerged3D', 'NormalisedInverseDifferenceMomentAveraged3D', 'NormalisedInverseDifferenceMerged3D', 'NormalisedInverseDifferenceAveraged3D', 'DependenceCountPercentage3D', 'InverseDifferenceMerged3D', 'InverseDifferenceAveraged3D', 'InverseDifferenceMomentMerged3D', 'InverseDifferenceMomentAveraged3D', 'RunEntropyMerged3D'
+            };
+
+            featureData = ExtractRadiomicFeatures(app, directory);
+            filteredFeaturesTable = featureData(:, ['VolumeID', desiredFeatures]);
+
             % Write the extracted features to a CSV file named 'conventional_features.csv'
             filename = fullfile(directory, 'radiomic_features.csv');
-            writecell(featureData, filename);
+            writetable(featureData, filename);
+        end
+
+
+        function CheckRepeatibilityButtonPushed(app, event)
+            directory = uigetdir();
+            featureData_original = readtable(fullfile(directory, 'radiomic_features.csv'));
+            featureData_affined = extractradFeat(app, directory, true);
+
+            sizes_feat_table = size(featureData_affined);
+            avg = sum(featureData_original + featureData_affined, 1) ./ sizes_feat_table(1) ./ 2;
+            rep = sum(abs(featureData_original - featureData_affined), 1) ./ abs(avg);
+
+            filename = fullfile(directory, 'radiomic_features_affined.csv');
+            writetable(featureData_affined, filename);
+            filename = fullfile(directory, 'radiomic_features_original.csv');
+            writetable(featureData_original, filename);
+
+            filename = fullfile(directory, 'radiomic_features_rep.csv');
+            writetable(rep, filename);
+
+
+            % featureData_original = readtable(fullfile(directory, 'radiomic_features.csv'));
+            % featureData_affined = readtable(fullfile(directory, 'radiomic_features_affined.csv'));
+            % sizes_feat_table = size(featureData_affined);
+            % avg = sum(featureData_original + featureData_affined, 1) ./ sizes_feat_table(1) ./ 2;
+            % rep = sum(abs(featureData_original - featureData_affined), 1) ./ abs(avg);
+            % filename = fullfile(directory, 'radiomic_features_rep.csv');
+            % writetable(rep, filename);
+            % 
+            % rep_p = rep';
+            % rep_p = sortrows(rep_p, [1])
         end
     end
+
 
     % Component initialization
     methods (Access = private)
@@ -223,6 +286,12 @@ classdef project_exported < matlab.apps.AppBase
             app.LoadSliceDirectoryButton.ButtonPushedFcn = createCallbackFcn(app, @LoadSliceDirectoryButtonPushed, true);
             app.LoadSliceDirectoryButton.Position = [101 199 123 23];
             app.LoadSliceDirectoryButton.Text = 'Load Slice Directory';
+
+            % Create CheckRepeatibilityButton
+            app.CheckRepeatibilityButton = uibutton(app.UIFigure, 'push');
+            app.CheckRepeatibilityButton.ButtonPushedFcn = createCallbackFcn(app, @CheckRepeatibilityButtonPushed, true);
+            app.CheckRepeatibilityButton.Position = [255 31 157 23];
+            app.CheckRepeatibilityButton.Text = 'Check Repeatibility';
 
             % Create ChannelDropDownLabel
             app.ChannelDropDownLabel = uilabel(app.UIFigure);
