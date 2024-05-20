@@ -16,21 +16,25 @@ function D = FindDiameterSingleSlice(volume_path, volume_ID, slice_ID)
     [~, masks] = ReadSliceByID(volume_path, volume_ID, slice_ID);
     
     sizes = size(masks);
+    % Requires mask
     if sizes(1) == 0
         disp("No mask specified");
         D = 0;
     else
+        % Combine the mask (join)
         mask_combined = squeeze(logical(sum(masks, 1)));
-
+        % Find the bounding rectangles for all the areas indicated by the
+        % combined mask
         stats = regionprops('table', mask_combined, 'Area', 'BoundingBox');
         boundingBoxes = stats.BoundingBox;
-        if ~isempty(boundingBoxes)
-            [~, idx] = max(stats.Area);
+        
+        if ~isempty(boundingBoxes)          % Check if any rectangle founds
+            [~, idx] = max(stats.Area);     % Find the largest bounding rectangle
             boundingBox = boundingBoxes(idx, :);
             WL = boundingBox(3:end);
-            D = max(WL);
+            D = max(WL);                    % The maximum diameter is the length of the largest rectangle
         else
-            D = 0;
+            D = 0;                          % If not found, the diameter is 0
         end
     end
 end
