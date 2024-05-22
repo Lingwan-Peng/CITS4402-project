@@ -230,16 +230,24 @@ classdef project_exported < matlab.apps.AppBase
             writetable(featureData, filename);
         end
 
-
+        % Check repeatibility of the radiomic features.
         function CheckRepeatibilityButtonPushed(app, event)
             directory = uigetdir();
+            % Read table from the extracted radiomic features as the
+            % original dataset
             featureData_original = readtable(fullfile(directory, 'radiomic_features.csv'));
+            % Perform affine transformation to each volume and re-run the
+            % radiomic feature extraction.
             featureData_affined = extractradFeat(app, directory, true);
-
+            
+            % Average the features over the volumes.
             sizes_feat_table = size(featureData_affined);
             avg = sum(featureData_original + featureData_affined, 1) ./ sizes_feat_table(1) ./ 2;
+            % Repeatibility -> square error of the original data and the
+            % transformed data. Larger means less repeatable.
             rep = sum(abs(featureData_original - featureData_affined), 1) ./ abs(avg);
-
+            
+            % Write files to disk.
             filename = fullfile(directory, 'radiomic_features_affined.csv');
             writetable(featureData_affined, filename);
             filename = fullfile(directory, 'radiomic_features_original.csv');
@@ -247,18 +255,6 @@ classdef project_exported < matlab.apps.AppBase
 
             filename = fullfile(directory, 'radiomic_features_rep.csv');
             writetable(rep, filename);
-
-
-            % featureData_original = readtable(fullfile(directory, 'radiomic_features.csv'));
-            % featureData_affined = readtable(fullfile(directory, 'radiomic_features_affined.csv'));
-            % sizes_feat_table = size(featureData_affined);
-            % avg = sum(featureData_original + featureData_affined, 1) ./ sizes_feat_table(1) ./ 2;
-            % rep = sum(abs(featureData_original - featureData_affined), 1) ./ abs(avg);
-            % filename = fullfile(directory, 'radiomic_features_rep.csv');
-            % writetable(rep, filename);
-            % 
-            % rep_p = rep';
-            % rep_p = sortrows(rep_p, [1])
         end
     end
 
